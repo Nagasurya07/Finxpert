@@ -17,7 +17,7 @@ const Header = async () => {
             <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg blur opacity-30 group-hover:opacity-80 transition duration-300"></div>
             <div className="relative flex items-center bg-white rounded-lg p-1 shadow-md">
               <Image
-                src={"/finxpert.svg"}
+                src={"/fx.svg"}
                 alt="FinXerpt Logo"
                 width={200}
                 height={60}
