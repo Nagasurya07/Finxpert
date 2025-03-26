@@ -1,5 +1,5 @@
 # Full Stack AI Fianace Platform with Next JS, Supabase, Tailwind, Prisma, Inngest, ArcJet, Shadcn UI  🔥
-manage your Fianace you may use the phonepe expenses track
+manage your Fianace. you may use it for the phonepe expenses track
 
 ```
 DATABASE_URL=
