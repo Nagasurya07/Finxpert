@@ -59,3 +59,4 @@ module.exports = {
   },
   plugins: [require("tailwindcss-animate")],
 };
+//Design at the speed of thought — Tailwind turns your ideas into UI instantly//
