@@ -1,4 +1,3 @@
-import arcjet, { createMiddleware, detectBot, shield } from "@arcjet/next";
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
@@ -8,46 +7,60 @@ const isProtectedRoute = createRouteMatcher([
   "/transaction(.*)",
 ]);
 
-// Create Arcjet middleware
-const aj = arcjet({
-  key: process.env.ARCJET_KEY,
-  // characteristics: ["userId"], // Track based on Clerk userId
-  rules: [
-    // Shield protection for content and security
-    shield({
-      mode: "LIVE",
-    }),
-    detectBot({
-      mode: "LIVE", // will block requests. Use "DRY_RUN" to log only
-      allow: [
-        "CATEGORY:SEARCH_ENGINE", // Google, Bing, etc
-        "GO_HTTP", // For Inngest
-        // See the full list at https://arcjet.com/bot-list
-      ],
-    }),
-  ],
-});
-
-// Create base Clerk middleware
-const clerk = clerkMiddleware(async (auth, req) => {
-  const { userId } = await auth();
-
-  if (!userId && isProtectedRoute(req)) {
-    const { redirectToSignIn } = await auth();
-    return redirectToSignIn();
+// Create a middleware that combines Clerk authentication with our Server Actions fix
+function fixServerActionsOrigin(req) {
+  const requestHeaders = new Headers(req.headers);
+  
+  // Fix for GitHub Codespaces - Set origin header to match x-forwarded-host
+  if (requestHeaders.has('x-forwarded-host') && 
+      requestHeaders.get('x-forwarded-host').includes('.app.github.dev')) {
+    const forwardedHost = requestHeaders.get('x-forwarded-host');
+    requestHeaders.set('origin', `https://${forwardedHost}`);
   }
+  
+  // Create a new request with the modified headers
+  const newRequest = new Request(req.url, {
+    method: req.method,
+    headers: requestHeaders,
+    body: req.body,
+    cache: req.cache,
+    credentials: req.credentials,
+    integrity: req.integrity,
+    keepalive: req.keepalive,
+    mode: req.mode,
+    redirect: req.redirect,
+    referrer: req.referrer,
+    referrerPolicy: req.referrerPolicy,
+    signal: req.signal,
+  });
 
-  return NextResponse.next();
+  return newRequest;
+}
+
+// Apply Clerk middleware with our custom header fix
+export default clerkMiddleware((auth, req) => {
+  // First fix the headers for Server Actions
+  const fixedRequest = fixServerActionsOrigin(req);
+  
+  // Then check authentication with Clerk
+  return auth().then(({ userId }) => {
+    // Redirect to sign in if accessing protected route without auth
+    if (!userId && isProtectedRoute(fixedRequest)) {
+      return auth().redirectToSignIn();
+    }
+    
+    // Otherwise continue with the request
+    return NextResponse.next({
+      request: fixedRequest,
+    });
+  });
 });
-
-// Chain middlewares - ArcJet runs first, then Clerk
-export default createMiddleware(aj, clerk);
 
 export const config = {
   matcher: [
     // Skip Next.js internals and all static files, unless found in search params
-    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:jpg|jpeg|gif|png|webp|svg|ico)).*)",
     // Always run for API routes
-    "/(api|trpc)(.*)",
+    "/api/(.*)",
   ],
 };
