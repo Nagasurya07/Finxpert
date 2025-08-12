@@ -2,6 +2,7 @@
 
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/prisma";
+import { checkUser } from "@/lib/checkUser";
 import { revalidatePath } from "next/cache";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import aj from "@/lib/arcjet";
@@ -46,9 +47,7 @@ export async function createTransaction(data) {
       throw new Error("Request blocked");
     }
 
-    const user = await db.user.findUnique({
-      where: { clerkUserId: userId },
-    });
+    const user = await checkUser();
 
     if (!user) {
       throw new Error("User not found");
@@ -103,9 +102,7 @@ export async function getTransaction(id) {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
 
-  const user = await db.user.findUnique({
-    where: { clerkUserId: userId },
-  });
+  const user = await checkUser();
 
   if (!user) throw new Error("User not found");
 
@@ -126,9 +123,7 @@ export async function updateTransaction(id, data) {
     const { userId } = await auth();
     if (!userId) throw new Error("Unauthorized");
 
-    const user = await db.user.findUnique({
-      where: { clerkUserId: userId },
-    });
+    const user = await checkUser();
 
     if (!user) throw new Error("User not found");
 
@@ -200,9 +195,7 @@ export async function getUserTransactions(query = {}) {
     const { userId } = await auth();
     if (!userId) throw new Error("Unauthorized");
 
-    const user = await db.user.findUnique({
-      where: { clerkUserId: userId },
-    });
+    const user = await checkUser();
 
     if (!user) {
       throw new Error("User not found");
