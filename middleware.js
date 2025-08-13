@@ -9,23 +9,20 @@ const isProtectedRoute = createRouteMatcher([
 
 // Apply Clerk middleware with our custom header fix (without recreating Request)
 export default clerkMiddleware((auth, req) => {
-  const requestHeaders = new Headers(req.headers);
+  // Protect protected routes (handles redirect automatically)
+  if (isProtectedRoute(req)) {
+    auth().protect();
+  }
 
-  // Align origin with forwarded host in Codespaces to satisfy Server Actions security check
+  // Mutate headers AFTER auth logic so we don't interfere with Clerk's checks
+  const requestHeaders = new Headers(req.headers);
   const fwdHost = requestHeaders.get("x-forwarded-host");
   if (fwdHost && fwdHost.includes(".app.github.dev")) {
+    // Make origin match forwarded host to satisfy Next.js Server Actions host validation
     requestHeaders.set("origin", `https://${fwdHost}`);
   }
 
-  const { userId } = auth();
-
-  if (!userId && isProtectedRoute(req)) {
-    return auth().redirectToSignIn();
-  }
-
-  return NextResponse.next({
-    request: { headers: requestHeaders },
-  });
+  return NextResponse.next({ request: { headers: requestHeaders } });
 });
 
 export const config = {
