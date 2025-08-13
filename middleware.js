@@ -9,10 +9,9 @@ const isProtectedRoute = createRouteMatcher([
 
 // Apply Clerk middleware with our custom header fix (without recreating Request)
 export default clerkMiddleware((auth, req) => {
-  // Protect protected routes (handles redirect automatically)
-  if (isProtectedRoute(req)) {
-    auth().protect();
-  }
+  // Clerk v6: protect is a method on the auth function itself, not on the returned auth object.
+  // Correct usage: auth.protect() (NOT auth().protect()).
+  if (isProtectedRoute(req)) auth.protect();
 
   // Mutate headers AFTER auth logic so we don't interfere with Clerk's checks
   const requestHeaders = new Headers(req.headers);
