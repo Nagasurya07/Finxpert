@@ -38,6 +38,16 @@ Think of it as your **PhonePe Expense Tracker 2.0**, designed for personal finan
 the view :
 <img width="1900" height="695" alt="image" src="https://github.com/user-attachments/assets/7c4405e0-bc84-44a6-bf77-73f25d73bc5b" />
 
+dashboard page:
+<img width="1915" height="896" alt="image" src="https://github.com/user-attachments/assets/a90b3a78-f1e8-48b0-8d61-c08473f20d77" />
+
+
+<img width="1918" height="897" alt="image" src="https://github.com/user-attachments/assets/695d7164-b252-432b-96fa-306a9a8a02c4" />
+
+
+<img width="1919" height="912" alt="image" src="https://github.com/user-attachments/assets/fd70a6c9-0d9c-40c0-9e0b-91d1d033e91a" />
+
+
 
 ## ⚙️ Environment Variables
 
