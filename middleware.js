@@ -1,3 +1,4 @@
+import arcjet, { createMiddleware, detectBot, shield } from "@arcjet/next";
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
@@ -7,28 +8,46 @@ const isProtectedRoute = createRouteMatcher([
   "/transaction(.*)",
 ]);
 
-// Apply Clerk middleware with our custom header fix (without recreating Request)
-export default clerkMiddleware((auth, req) => {
-  // Clerk v6: protect is a method on the auth function itself, not on the returned auth object.
-  // Correct usage: auth.protect() (NOT auth().protect()).
-  if (isProtectedRoute(req)) auth.protect();
+// Create Arcjet middleware
+const aj = arcjet({
+  key: process.env.ARCJET_KEY,
+  // characteristics: ["userId"], // Track based on Clerk userId
+  rules: [
+    // Shield protection for content and security
+    shield({
+      mode: "LIVE",
+    }),
+    detectBot({
+      mode: "LIVE", // will block requests. Use "DRY_RUN" to log only
+      allow: [
+        "CATEGORY:SEARCH_ENGINE", // Google, Bing, etc
+        "GO_HTTP", // For Inngest
+        // See the full list at https://arcjet.com/bot-list
+      ],
+    }),
+  ],
+});
 
-  // Mutate headers AFTER auth logic so we don't interfere with Clerk's checks
-  const requestHeaders = new Headers(req.headers);
-  const fwdHost = requestHeaders.get("x-forwarded-host");
-  if (fwdHost && fwdHost.includes(".app.github.dev")) {
-    // Make origin match forwarded host to satisfy Next.js Server Actions host validation
-    requestHeaders.set("origin", `https://${fwdHost}`);
+// Create base Clerk middleware
+const clerk = clerkMiddleware(async (auth, req) => {
+  const { userId } = await auth();
+
+  if (!userId && isProtectedRoute(req)) {
+    const { redirectToSignIn } = await auth();
+    return redirectToSignIn();
   }
 
-  return NextResponse.next({ request: { headers: requestHeaders } });
+  return NextResponse.next();
 });
+
+// Chain middlewares - ArcJet runs first, then Clerk
+export default createMiddleware(aj, clerk);
 
 export const config = {
   matcher: [
     // Skip Next.js internals and all static files, unless found in search params
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:jpg|jpeg|gif|png|webp|svg|ico)).*)",
+    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
     // Always run for API routes
-    "/api/(.*)",
+    "/(api|trpc)(.*)",
   ],
 };
