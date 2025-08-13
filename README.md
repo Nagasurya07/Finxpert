@@ -57,3 +57,8 @@ RESEND_API_KEY=
 
 # ArcJet Security
 ARCJET_KEY=
+
+
+the view :
+<img width="1900" height="695" alt="image" src="https://github.com/user-attachments/assets/7c4405e0-bc84-44a6-bf77-73f25d73bc5b" />
+
