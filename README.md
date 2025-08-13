@@ -37,6 +37,8 @@ Think of it as your **PhonePe Expense Tracker 2.0**, designed for personal finan
 
 the view :
 <img width="1900" height="695" alt="image" src="https://github.com/user-attachments/assets/7c4405e0-bc84-44a6-bf77-73f25d73bc5b" />
+<img width="1919" height="824" alt="image" src="https://github.com/user-attachments/assets/53b507d3-b442-4170-aec3-44da495eeea4" />
+
 
 dashboard page:
 <img width="1915" height="896" alt="image" src="https://github.com/user-attachments/assets/a90b3a78-f1e8-48b0-8d61-c08473f20d77" />
