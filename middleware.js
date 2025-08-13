@@ -7,52 +7,24 @@ const isProtectedRoute = createRouteMatcher([
   "/transaction(.*)",
 ]);
 
-// Create a middleware that combines Clerk authentication with our Server Actions fix
-function fixServerActionsOrigin(req) {
-  const requestHeaders = new Headers(req.headers);
-  
-  // Fix for GitHub Codespaces - Set origin header to match x-forwarded-host
-  if (requestHeaders.has('x-forwarded-host') && 
-      requestHeaders.get('x-forwarded-host').includes('.app.github.dev')) {
-    const forwardedHost = requestHeaders.get('x-forwarded-host');
-    requestHeaders.set('origin', `https://${forwardedHost}`);
-  }
-  
-  // Create a new request with the modified headers
-  const newRequest = new Request(req.url, {
-    method: req.method,
-    headers: requestHeaders,
-    body: req.body,
-    cache: req.cache,
-    credentials: req.credentials,
-    integrity: req.integrity,
-    keepalive: req.keepalive,
-    mode: req.mode,
-    redirect: req.redirect,
-    referrer: req.referrer,
-    referrerPolicy: req.referrerPolicy,
-    signal: req.signal,
-  });
-
-  return newRequest;
-}
-
-// Apply Clerk middleware with our custom header fix
+// Apply Clerk middleware with our custom header fix (without recreating Request)
 export default clerkMiddleware((auth, req) => {
-  // First fix the headers for Server Actions
-  const fixedRequest = fixServerActionsOrigin(req);
-  
-  // Then check authentication with Clerk
-  return auth().then(({ userId }) => {
-    // Redirect to sign in if accessing protected route without auth
-    if (!userId && isProtectedRoute(fixedRequest)) {
-      return auth().redirectToSignIn();
-    }
-    
-    // Otherwise continue with the request
-    return NextResponse.next({
-      request: fixedRequest,
-    });
+  const requestHeaders = new Headers(req.headers);
+
+  // Align origin with forwarded host in Codespaces to satisfy Server Actions security check
+  const fwdHost = requestHeaders.get("x-forwarded-host");
+  if (fwdHost && fwdHost.includes(".app.github.dev")) {
+    requestHeaders.set("origin", `https://${fwdHost}`);
+  }
+
+  const { userId } = auth();
+
+  if (!userId && isProtectedRoute(req)) {
+    return auth().redirectToSignIn();
+  }
+
+  return NextResponse.next({
+    request: { headers: requestHeaders },
   });
 });
 
